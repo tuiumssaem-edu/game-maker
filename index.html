@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 프로 게임 프롬프트 메이커 (바이브 코딩 키즈) ✨</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #f3e8ff;
+            background-image: 
+                radial-gradient(#d8b4fe 2px, transparent 2px), 
+                radial-gradient(#fbcfe8 2px, #f3e8ff 2px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+        }
+        
+        .font-sans-kr {
+            font-family: 'Jua', 'Noto Sans KR', sans-serif;
+            letter-spacing: 0.01em;
+        }
+
+        /* 동글동글하고 귀여운 글씨 느낌 */
+        body, button, input, textarea, select {
+            font-family: 'Jua', 'Noto Sans KR', sans-serif;
+        }
+        button {
+            letter-spacing: 0.01em;
+        }
+
+        /* 화면 전환 애니메이션 */
+        .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bounce-soft { animation: bounceSoft 2.2s infinite ease-in-out; }
+        @keyframes bounceSoft {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* 다중 선택 버튼 활성화 스타일 */
+        .opt-btn {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .opt-btn:hover {
+            transform: translateY(-2px);
+        }
+        .opt-btn.selected {
+            transform: scale(1.03);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 선택 카드: 문구가 자연스럽게 줄바꿈되고 선택 표시가 찌그러지지 않도록 */
+        .option-grid { align-items: stretch; }
+        .option-grid .opt-btn { min-height: 76px; height: 100%; }
+        .option-grid .option-label {
+            flex: 1 1 auto;
+            min-width: 0;
+            line-height: 1.55;
+            overflow-wrap: break-word;
+            word-break: keep-all;
+        }
+        .option-grid .check-icon {
+            flex: 0 0 auto;
+            white-space: nowrap;
+            line-height: 1.2;
+            margin-top: 1px;
+        }
+        .option-grid .custom-option-btn { min-height: 60px; }
+        @media (max-width: 639px) {
+            .option-grid .opt-btn { min-height: 64px; padding: 12px; gap: 10px; }
+            .option-grid .option-label { font-size: 1rem; }
+        }
+
+        /* 그림판 캔버스 터치 스크롤 방지 */
+        #drawing-canvas {
+            touch-action: none;
+            cursor: crosshair;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        .color-swatch {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .color-swatch.active {
+            transform: scale(1.25);
+            box-shadow: 0 0 0 3px #fff, 0 0 0 6px #9333ea;
+        }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #f3e8ff; }
+        ::-webkit-scrollbar-thumb { background: #c084fc; border-radius: 999px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+    <div class="w-full max-w-5xl">
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+            <div class="text-center md:text-left">
+                <div class="text-2xl md:text-3xl text-purple-800">🎮 프로 게임 프롬프트 메이커</div>
+                <p class="text-sm text-purple-600 font-sans-kr">바이브 코딩 키즈 · 나만의 게임 설계하기</p>
+            </div>
+            <!-- 단계 표시기 -->
+            <div class="flex items-center gap-1 md:gap-3 text-sm md:text-base flex-wrap justify-center">
+                <button onclick="goTo('step1')" id="nav-step1" class="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-500 transition flex items-center gap-1">
+                    <span>1. 쏙쏙 고르기</span>
+                </button>
+                <span class="text-gray-300">▶</span>
+                <button onclick="goTo('step2')" id="nav-step2" class="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-500 transition flex items-center gap-1">
+                    <span>2. 글쓰기 & 내 그림</span>
+                </button>
+                <span class="text-gray-300">▶</span>
+                <button onclick="goTo('result')" id="nav-result" class="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-500 transition flex items-center gap-1">
+                    <span>3. 마법 주문서</span>
+                </button>
+            </div>
+        </header>
+
+    <!-- 메인 앱 컨테이너 -->
+    <div class="max-w-5xl w-full bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border-4 border-purple-300 overflow-hidden mb-8">
+        
+        <!-- ==================== [Intro Screen] ==================== -->
+        <div id="intro-screen" class="p-8 md:p-14 text-center fade-in block">
+            <div class="inline-block bg-purple-100 text-purple-700 px-5 py-1.5 rounded-full text-lg mb-4 border-2 border-purple-200">
+                🚀 내가 그린 손그림이 게임 주인공으로 살아 움직인다!
+            </div>
+            <div class="text-6xl md:text-7xl mb-4 bounce-soft">🎮🎨✨</div>
+            <h1 class="text-4xl md:text-5xl text-purple-700 mb-4 leading-tight">
+                프로 게임 프롬프트 메이커
+            </h1>
+            <p class="text-gray-600 text-lg md:text-xl mb-10 max-w-2xl mx-auto font-sans-kr font-medium">
+                단순한 화면이 아니라 <strong class="text-pink-600">시작 스토리, 움직이는 내 손그림 캐릭터, 점수판, 게임 오버</strong>까지 완벽하게 작동하는 진짜 게임을 기획해 보자! 어떻게 시작할래?
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <button onclick="goTo('step1')" class="group bg-gradient-to-br from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600 text-white p-8 rounded-3xl shadow-xl transform hover:-translate-y-1 transition duration-200 border-b-8 border-rose-700 text-left flex flex-col justify-between">
+                    <div>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">추천! 아이디어가 팡팡!</span>
+                        <div class="text-5xl my-4 group-hover:scale-110 transition-transform origin-left">🎯</div>
+                        <h2 class="text-2xl md:text-3xl mb-2">버튼으로 쉽게 고를래!<br>(Step 1부터 시작)</h2>
+                    </div>
+                    <p class="text-pink-100 text-base font-sans-kr mt-2">
+                        장르, 조작법, 방해물 등 재미있는 보기를 여러 개 고르고 직접 입력하며 쉽게 게임 뼈대를 만들어요!
+                    </p>
+                </button>
+
+                <button onclick="goTo('step2')" class="group bg-gradient-to-br from-indigo-400 to-blue-500 hover:from-indigo-500 hover:to-blue-600 text-white p-8 rounded-3xl shadow-xl transform hover:-translate-y-1 transition duration-200 border-b-8 border-blue-700 text-left flex flex-col justify-between">
+                    <div>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-sm">이미 생각한 게임이 있다면!</span>
+                        <div class="text-5xl my-4 group-hover:scale-110 transition-transform origin-left">🎨</div>
+                        <h2 class="text-2xl md:text-3xl mb-2">내 마음대로 자유롭게 쓸래!<br>(Step 2 글쓰기 & 그림판)</h2>
+                    </div>
+                    <p class="text-blue-100 text-base font-sans-kr mt-2">
+                        바로 내 생각대로 게임 규칙을 적고, 직접 캐릭터 그림을 그리거나 사진을 올려요!
+                    </p>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== [Step 1 Screen (Multi-Choice + Custom)] ==================== -->
+        <div id="step1-screen" class="p-5 md:p-10 fade-in hidden">
+            <div class="text-center mb-8">
+                <span class="bg-pink-100 text-pink-600 px-4 py-1 rounded-full text-base border border-pink-200">
+                    💡 꿀팁: 각 질문마다 마음에 드는 버튼을 <strong>여러 개 동시에(중복 선택)</strong> 눌러도 돼요!
+                </span>
+                <h2 class="text-3xl md:text-4xl text-purple-700 mt-3">🎯 어떤 게임을 만들고 싶니? 콕콕 골라봐!</h2>
+                <p class="text-gray-500 text-base font-sans-kr mt-1">여기서 고른 내용은 다음 단계(Step 2 글쓰기 칸)에 자동으로 합쳐져서 들어가요!</p>
+            </div>
+            
+            <!-- 6가지 카테고리 컨테이너 (JS로 동적 렌더링) -->
+            <div id="step1-categories-container" class="space-y-8"></div>
+
+            <!-- 하단 네비게이션 버튼 -->
+            <div class="mt-10 bg-purple-50 p-6 rounded-3xl border-2 border-purple-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="text-center md:text-left">
+                    <div class="text-xl text-purple-800">다 골랐나요?</div>
+                    <div class="text-sm text-gray-500 font-sans-kr">내 손그림을 추가하고 상세 설명을 적거나, 바로 주문서를 완성할 수 있어요!</div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button onclick="goTo('step2')" class="px-6 py-4 bg-amber-400 hover:bg-amber-500 text-amber-950 text-xl rounded-2xl shadow-md border-b-4 border-amber-600 transition flex items-center justify-center gap-2">
+                        <span>🎨 내 손그림 & 상세 설명 더하기 (Step 2로)</span>
+                    </button>
+                    <button onclick="goTo('result')" class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-xl rounded-2xl shadow-lg border-b-4 border-purple-800 transition flex items-center justify-center gap-2">
+                        <span>⚡ 바로 마법 주문서 완성하기 (Step 3로)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== [Step 2 Screen (Detailed Writing + Drawing Studio)] ==================== -->
+        <div id="step2-screen" class="p-5 md:p-10 fade-in hidden">
+            <div class="text-center mb-8">
+                <span class="bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-base border border-blue-200">
+                    ✍️ Step 1에서 고른 내용이 들어있어요! 자유롭게 고치거나 아래에서 내 그림을 추가해 보세요.
+                </span>
+                <h2 class="text-3xl md:text-4xl text-blue-700 mt-3">📝 상상 펼치기 & 🎨 내 손그림 스튜디오</h2>
+                <p class="text-gray-500 text-base font-sans-kr mt-1">비워둔 칸이 있어도 괜찮아요! AI가 어울리게 알아서 만들어 줄 거예요.</p>
+            </div>
+
+            <!-- 게임 제목 입력 (선택사항) -->
+            <div class="mb-8 bg-gradient-to-r from-purple-100 to-pink-100 p-5 rounded-2xl border-2 border-purple-300 flex flex-col md:flex-row items-center gap-4">
+                <label for="game-title" class="text-2xl text-purple-800 whitespace-nowrap flex items-center gap-2">
+                    <span>🏷️ 우리 게임의 제목은?</span>
+                </label>
+                <input type="text" id="game-title" placeholder="예: 우주 고양이의 보석 대모험! (안 적으면 AI가 멋지게 지어줘요)" class="w-full bg-white border-2 border-purple-300 rounded-xl p-3.5 text-lg font-sans-kr focus:outline-none focus:border-purple-600">
+            </div>
+            
+            <!-- 6가지 서술형 컨테이너 (JS로 동적 렌더링) -->
+            <div id="step2-textareas-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10"></div>
+
+            <!-- ==================== 🎨 특별 코너: 내 손그림 추가 스튜디오 ==================== -->
+            <div class="bg-gradient-to-br from-amber-50 via-orange-50 to-pink-50 rounded-3xl p-6 md:p-8 border-4 border-amber-300 shadow-lg">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b-2 border-amber-200">
+                    <div>
+                        <span class="bg-amber-200 text-amber-900 px-3 py-1 rounded-full text-sm">특별 코너 ✨</span>
+                        <h3 class="text-2xl md:text-3xl text-amber-900 mt-2 flex items-center gap-2">
+                            <span>🎨 내가 그린 그림을 게임에 넣을래요!</span>
+                        </h3>
+                        <p class="text-gray-600 text-sm md:text-base font-sans-kr mt-1">
+                            주인공이나 괴물, 아이템을 직접 그리거나 종이에 그린 사진을 올려보세요! 진짜 게임 캐릭터로 변신해요.
+                        </p>
+                    </div>
+                    <!-- 사용 여부 스위치 -->
+                    <label class="inline-flex items-center cursor-pointer bg-white px-5 py-3 rounded-2xl border-2 border-amber-300 shadow-sm self-start md:self-auto">
+                        <input type="checkbox" id="use-drawing-toggle" class="sr-only peer" onchange="toggleDrawingStudio(this.checked)" checked>
+                        <div class="relative w-12 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                        <span class="ml-3 text-lg text-amber-900">그림 기능 켜기</span>
+                    </label>
+                </div>
+
+                <!-- 스튜디오 본문 -->
+                <div id="drawing-studio-body" class="mt-6 space-y-6">
+                    <!-- 탭 버튼: (A) 앱에서 바로 그리기 vs (B) 종이에 그린 그림 사진 올리기 -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button type="button" id="tab-draw-btn" onclick="switchArtMode('draw')" class="flex-1 py-3.5 px-5 rounded-2xl text-lg md:text-xl border-2 border-amber-500 bg-amber-500 text-white shadow-md transition flex items-center justify-center gap-2">
+                            <span>🖌️ (A) 앱에서 바로 그리기 (미니 그림판)</span>
+                        </button>
+                        <button type="button" id="tab-upload-btn" onclick="switchArtMode('upload')" class="flex-1 py-3.5 px-5 rounded-2xl text-lg md:text-xl border-2 border-amber-300 bg-white text-amber-800 hover:bg-amber-100 transition flex items-center justify-center gap-2">
+                            <span>📸 (B) 종이에 그린 그림 사진 올리기</span>
+                        </button>
+                    </div>
+
+                    <!-- 모드 A: 미니 캔버스 그림판 -->
+                    <div id="art-mode-draw" class="bg-white rounded-3xl p-4 md:p-6 border-2 border-amber-200 shadow-inner">
+                        <div class="flex flex-col lg:flex-row gap-6 items-center">
+                            <!-- 캔버스 영역 -->
+                            <div class="flex flex-col items-center w-full lg:w-auto">
+                                <div class="relative rounded-2xl overflow-hidden border-4 border-purple-300 shadow-md bg-white">
+                                    <canvas id="drawing-canvas" width="360" height="280" class="max-w-full"></canvas>
+                                </div>
+                                <span class="text-xs text-gray-400 font-sans-kr mt-2">💡 마우스나 손가락으로 주인공 캐릭터나 몬스터를 큼직하게 그려보세요!</span>
+                            </div>
+
+                            <!-- 도구 모음 (팔레트 8색, 굵기, 지우개, 저장) -->
+                            <div class="flex-1 w-full space-y-5">
+                                <!-- 색상 팔레트 8색 -->
+                                <div>
+                                    <div class="text-base text-gray-700 mb-2 flex items-center justify-between">
+                                        <span>🌈 색상 팔레트 (8색)</span>
+                                        <span id="current-tool-badge" class="text-xs bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-sans-kr">현재: 컬러 펜</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-3" id="color-palette">
+                                        <button type="button" onclick="selectPenColor('#1e293b', this)" class="color-swatch active w-9 h-9 rounded-full bg-slate-800 border-2 border-white shadow" title="검정"></button>
+                                        <button type="button" onclick="selectPenColor('#ef4444', this)" class="color-swatch w-9 h-9 rounded-full bg-red-500 border-2 border-white shadow" title="빨강"></button>
+                                        <button type="button" onclick="selectPenColor('#f97316', this)" class="color-swatch w-9 h-9 rounded-full bg-orange-500 border-2 border-white shadow" title="주황"></button>
+                                        <button type="button" onclick="selectPenColor('#eab308', this)" class="color-swatch w-9 h-9 rounded-full bg-yellow-400 border-2 border-white shadow" title="노랑"></button>
+                                        <button type="button" onclick="selectPenColor('#22c55e', this)" class="color-swatch w-9 h-9 rounded-full bg-green-500 border-2 border-white shadow" title="초록"></button>
+                                        <button type="button" onclick="selectPenColor('#3b82f6', this)" class="color-swatch w-9 h-9 rounded-full bg-blue-500 border-2 border-white shadow" title="파랑"></button>
+                                        <button type="button" onclick="selectPenColor('#a855f7', this)" class="color-swatch w-9 h-9 rounded-full bg-purple-500 border-2 border-white shadow" title="보라"></button>
+                                        <button type="button" onclick="selectPenColor('#ec4899', this)" class="color-swatch w-9 h-9 rounded-full bg-pink-500 border-2 border-white shadow" title="분홍"></button>
+                                    </div>
+                                </div>
+
+                                <!-- 펜 굵기 조절 -->
+                                <div>
+                                    <div class="text-base text-gray-700 mb-2 flex items-center justify-between">
+                                        <span>✏️ 펜/지우개 굵기 조절</span>
+                                        <span id="brush-size-label" class="text-sm text-purple-700 font-sans-kr font-bold">8px (보통)</span>
+                                    </div>
+                                    <input type="range" id="brush-size" min="3" max="28" value="8" oninput="updateBrushSize(this.value)" class="w-full accent-purple-600 cursor-pointer h-2 bg-purple-100 rounded-lg">
+                                </div>
+
+                                <!-- 액션 버튼들: 지우개, 전체 지우기, PNG 다운로드 -->
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+                                    <button type="button" id="eraser-btn" onclick="enableEraser()" class="py-2.5 px-3 rounded-xl border-2 border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700 text-base flex items-center justify-center gap-1.5 transition">
+                                        <span>🧼 지우개</span>
+                                    </button>
+                                    <button type="button" onclick="clearCanvas()" class="py-2.5 px-3 rounded-xl border-2 border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-base flex items-center justify-center gap-1.5 transition">
+                                        <span>🗑️ 전체 지우기</span>
+                                    </button>
+                                    <button type="button" onclick="downloadArtImage()" class="col-span-2 sm:col-span-1 py-2.5 px-3 rounded-xl border-b-4 border-emerald-700 bg-emerald-500 hover:bg-emerald-600 text-white text-base flex items-center justify-center gap-1.5 shadow transition">
+                                        <span>💾 내 그림 저장하기</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 모드 B: 종이에 그린 그림 사진 올리기 -->
+                    <div id="art-mode-upload" class="bg-white rounded-3xl p-6 border-2 border-amber-200 shadow-inner hidden">
+                        <div class="flex flex-col md:flex-row items-center gap-6">
+                            <label class="w-full md:w-1/2 border-4 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/50 rounded-3xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center">
+                                <span class="text-5xl mb-3">📷</span>
+                                <span class="text-xl text-amber-900 mb-1">내 그림 사진 파일 선택하기</span>
+                                <span class="text-xs text-gray-500 font-sans-kr">종이나 패드에 그린 그림 사진(PNG, JPG)을 올려주세요!</span>
+                                <input type="file" id="upload-art-input" accept="image/*" class="hidden" onchange="handleArtUpload(event)">
+                            </label>
+
+                            <div class="w-full md:w-1/2 flex flex-col items-center justify-center">
+                                <div id="upload-preview-empty" class="text-gray-400 text-center py-8 font-sans-kr text-sm">
+                                    아직 올린 사진이 없어요.<br>왼쪽 버튼을 눌러 사진을 골라보세요!
+                                </div>
+                                <div id="upload-preview-box" class="hidden flex-col items-center">
+                                    <img id="uploaded-art-img" src="" alt="업로드한 내 그림 미리보기" class="max-h-52 rounded-2xl border-4 border-purple-300 shadow-md object-contain bg-white">
+                                    <button type="button" onclick="clearUploadedArt()" class="mt-2 text-xs text-rose-600 underline font-sans-kr">사진 지우기</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 내 그림에 대한 한 줄 설명 (선택) -->
+                    <div class="bg-white/90 p-4 rounded-2xl border-2 border-amber-200 flex flex-col sm:flex-row items-center gap-3">
+                        <label for="art-desc" class="text-lg text-amber-900 whitespace-nowrap">💬 이 그림은 무엇인가요?</label>
+                        <input type="text" id="art-desc" placeholder="예: 파란 망토를 두른 우리 게임 주인공 번개 고양이예요!" class="w-full bg-white border border-amber-300 rounded-xl p-2.5 text-sm md:text-base font-sans-kr focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <!-- 그림 반영 방식 선택 옵션 (체크박스 2개, 둘 다 기본 선택) -->
+                    <div class="bg-white p-5 rounded-2xl border-2 border-amber-300 space-y-3">
+                        <div class="text-lg text-amber-900">✨ AI가 내 그림을 어떻게 게임에 넣어주면 좋겠나요? (둘 다 체크하면 가장 좋아요!)</div>
+                        
+                        <label class="flex items-start gap-3 p-3 rounded-xl bg-purple-50/70 hover:bg-purple-100/70 border border-purple-200 cursor-pointer transition">
+                            <input type="checkbox" id="opt-ai-svg" checked class="mt-1 w-5 h-5 accent-purple-600 rounded cursor-pointer">
+                            <div class="font-sans-kr text-sm md:text-base">
+                                <div class="font-bold text-purple-900 font-['Jua'] text-lg">1. 👀 AI야, 내 그림 보고 똑같이 그려줘! (시각 분석 & 코드 변환)</div>
+                                <p class="text-gray-600 text-xs md:text-sm">내가 AI 채팅창에 이 그림을 같이 첨부할 테니, 그림 속 캐릭터의 모양, 색깔, 특징을 분석해서 똑같이 닮은 귀여운 SVG/Canvas 그래픽 코드로 구현해 줘.</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200 cursor-pointer transition">
+                            <input type="checkbox" id="opt-ingame-upload" checked class="mt-1 w-5 h-5 accent-emerald-600 rounded cursor-pointer">
+                            <div class="font-sans-kr text-sm md:text-base">
+                                <div class="font-bold text-emerald-900 font-['Jua'] text-lg">2. 📂 게임 안에서 내 그림 파일 직접 불러오기! (인게임 이미지 업로더 탑재)</div>
+                                <p class="text-gray-600 text-xs md:text-sm">만들어진 게임의 시작 화면에 <strong>[내 그림 파일 올리기(이미지 업로드)]</strong> 버튼을 만들어 줘. 내가 컴퓨터나 패드에 있는 내 그림 사진을 고르면, 배경을 투명하게(또는 동그랗게) 다듬어서 실제 게임 주인공이나 괴물 이미지로 변신해 움직이도록 코딩해 줘!</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 네비게이션 버튼 -->
+            <div class="mt-10 flex flex-col sm:flex-row gap-4">
+                <button onclick="goTo('step1')" class="sm:w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xl py-4 rounded-2xl shadow border-b-4 border-gray-400 transition flex items-center justify-center gap-2">
+                    <span>👈 버튼 다시 고르기 (Step 1)</span>
+                </button>
+                <button onclick="goTo('result')" class="sm:w-2/3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-2xl py-5 rounded-2xl shadow-xl border-b-4 border-indigo-800 transition flex items-center justify-center gap-2">
+                    <span>🚀 고퀄리티 게임 마법 주문서 만들기! (Step 3)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== [Step 3 Screen (Result Prompt)] ==================== -->
+        <div id="result-screen" class="p-5 md:p-10 fade-in hidden">
+            <div class="text-center mb-6">
+                <span class="bg-emerald-100 text-emerald-700 px-4 py-1 rounded-full text-base border border-emerald-300">
+                    🎉 짜잔! 스토리는 탄탄하고 내 손그림까지 살아 움직이는 프로 게임 주문서 완성!
+                </span>
+                <h2 class="text-3xl md:text-4xl text-purple-700 mt-3">🪄 AI에게 보낼 마법의 게임 설계도</h2>
+                <p class="text-gray-600 text-base font-sans-kr mt-1">
+                    아래 초록색 글씨에 <strong>시작 화면, 내 그림 업로드 기능, 조작법, 점수판, 게임오버 규칙</strong>까지 모두 들어있어요!
+                </p>
+            </div>
+
+            <!-- 📌 내 그림 미리보기 & 안내 배너 (그림이 있을 때만 표시됨) -->
+            <div id="result-art-banner" class="hidden mb-6 bg-gradient-to-r from-amber-100 via-yellow-50 to-orange-100 border-4 border-amber-400 rounded-3xl p-5 shadow-md">
+                <div class="flex flex-col md:flex-row items-center gap-5">
+                    <div class="bg-white p-2 rounded-2xl border-2 border-amber-300 shadow-sm shrink-0">
+                        <img id="result-art-preview-img" src="" alt="내 손그림 미리보기" class="w-32 h-28 object-contain rounded-xl">
+                    </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="text-xl md:text-2xl text-amber-900 mb-1">
+                            📌 잊지 마세요! 내 손그림도 함께 준비되었어요!
+                        </div>
+                        <p class="text-sm md:text-base text-amber-950 font-sans-kr leading-relaxed">
+                            AI 채팅창에 아래 주문서를 붙여넣을 때 <strong>이 그림 파일도 꼭 함께 첨부</strong>하거나, 완성된 게임 시작 화면의 <strong>[내 그림 올리기] 버튼</strong>에 넣어보세요!
+                        </p>
+                        <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-2">
+                            <button type="button" onclick="downloadArtImage()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-base shadow border-b-2 border-amber-700 transition flex items-center gap-1.5">
+                                <span>💾 내 그림 이미지 파일 저장하기 (PNG)</span>
+                            </button>
+                            <button type="button" onclick="goTo('step2')" class="px-3 py-2 bg-white hover:bg-amber-50 text-amber-800 rounded-xl text-sm border border-amber-300 font-sans-kr">
+                                🎨 그림 다시 그리기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 내가 고른 요약 카드 -->
+            <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-4 mb-5">
+                <div class="text-lg text-purple-800 mb-2 flex items-center justify-between">
+                    <span>📋 나의 게임 기획 요약</span>
+                    <button onclick="goTo('step2')" class="text-sm bg-white px-3 py-1 rounded-lg border border-purple-300 text-purple-600 hover:bg-purple-100">내용 수정하기 ✏️</button>
+                </div>
+                <div id="summary-badges" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm font-sans-kr"></div>
+            </div>
+
+            <!-- 생성된 프롬프트 영역 -->
+            <div class="bg-slate-900 rounded-2xl p-4 md:p-6 shadow-inner border-4 border-slate-700 relative">
+                <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 text-slate-400 text-xs font-sans-kr">
+                    <span>PROMPT FOR AI (ChatGPT, Claude, Gemini 등)</span>
+                    <span>직접 클릭해서 글자를 수정할 수도 있어요</span>
+                </div>
+                <textarea id="finalPrompt" class="w-full bg-transparent text-emerald-300 font-sans-kr text-sm md:text-base leading-relaxed focus:outline-none resize-y" style="min-height: 360px;"></textarea>
+            </div>
+
+            <!-- 하단 액션 버튼들 -->
+            <div class="mt-6 flex flex-col md:flex-row gap-4">
+                <button onclick="copyPrompt()" class="md:w-2/3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-2xl py-5 rounded-2xl shadow-xl border-b-4 border-green-800 transition flex items-center justify-center gap-3 transform hover:scale-[1.01]">
+                    <span>📋 마법 주문서 복사하기 (클릭!)</span>
+                </button>
+                <div class="md:w-1/3 flex gap-3">
+                    <button onclick="goTo('step1')" class="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-lg py-4 rounded-2xl border-b-4 border-amber-300 transition">
+                        👈 다시 고르기
+                    </button>
+                    <button onclick="resetApp()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-lg py-4 rounded-2xl border-b-4 border-gray-400 transition">
+                        🔄 처음부터
+                    </button>
+                </div>
+            </div>
+
+            <!-- 사용 가이드 박스 -->
+            <div class="mt-6 bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 text-blue-900 font-sans-kr text-sm md:text-base">
+                <div class="font-bold text-lg font-['Jua'] mb-1">💡 복사한 다음 어떻게 하나요?</div>
+                <ol class="list-decimal list-inside space-y-1 text-blue-800">
+                    <li>위 초록색 <strong>[마법 주문서 복사하기]</strong> 버튼을 누릅니다.</li>
+                    <li><strong>제미나이(Gemini), 클로드(Claude), 챗GPT</strong> 같은 AI 채팅창을 엽니다.</li>
+                    <li>채팅창에 <strong>붙여넣기(Ctrl+V)</strong> 하고 엔터를 누르면 진짜 작동하는 게임 코드가 뚝딱 만들어져요!</li>
+                    <li>만들어진 게임을 해보고 <em>"속도를 더 빠르게 해줘!", "보스 몬스터를 추가해줘!"</em>라고 이어서 말해보세요!</li>
+                </ol>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 6가지 핵심 게임 기획 카테고리 데이터 정의
+        const CATEGORIES = [
+            {
+                id: 'genre',
+                num: 1,
+                icon: '🕹️',
+                title: '게임 장르와 방식은 무엇인가요?',
+                subtitle: '핵심 재미 고르기 (여러 개 골라 섞어도 재미있어요!)',
+                theme: {
+                    bg: 'bg-indigo-50',
+                    border: 'border-indigo-200',
+                    title: 'text-indigo-800',
+                    btnActiveBg: 'bg-indigo-600',
+                    btnActiveText: 'text-white',
+                    btnActiveBorder: 'border-indigo-800',
+                    inputBorder: 'border-indigo-400'
+                },
+                placeholder: '예: 하늘에서 떨어지는 것 피하기 + 보석 아이템 모으기 액션 게임',
+                options: [
+                    { label: '☄️ 하늘에서 떨어지는 것 피하기', value: '하늘에서 쏟아지는 위험한 장애물을 타이밍 맞춰 좌우로 피하고 생존하는 게임' },
+                    { label: '🦘 점프하며 장애물 넘기 (런게임)', value: '앞으로 달려가며 다가오는 장애물과 구덩이를 점프(2단 점프)로 뛰어넘는 런게임' },
+                    { label: '🎯 목표물 클릭해 잡기 (슈팅/클리커)', value: '화면 여기저기에 나타나는 목표물이나 몬스터를 순발력 있게 클릭(터치)해 잡는 게임' },
+                    { label: '🌀 미로 탈출 & 보물찾기', value: '복잡한 길과 함정을 피해 열쇠나 보물을 찾아 탈출구까지 이동하는 미로 어드벤처' },
+                    { label: '🎵 리듬/타이밍 맞추기', value: '신나는 박자나 움직이는 게이지 타이밍에 맞춰 정확히 버튼을 누르는 타이밍 게임' },
+                    { label: '🛡️ 디펜스/기지 막아내기', value: '몰려오는 악당들로부터 우리의 소중한 보물이나 기지를 마법/무기로 지켜내는 디펜스 게임' }
+                ]
+            },
+            {
+                id: 'world',
+                num: 2,
+                icon: '🌍',
+                title: '세계관과 시작 스토리는 무엇인가요?',
+                subtitle: '어떤 배경에서 왜 모험이 시작되는지 골라보세요',
+                theme: {
+                    bg: 'bg-emerald-50',
+                    border: 'border-emerald-200',
+                    title: 'text-emerald-800',
+                    btnActiveBg: 'bg-emerald-600',
+                    btnActiveText: 'text-white',
+                    btnActiveBorder: 'border-emerald-800',
+                    inputBorder: 'border-emerald-400'
+                },
+                placeholder: '예: 마법 숲의 요정이 잃어버린 빛의 보석을 되찾기 위해 모험을 떠나는 이야기',
+                options: [
+                    { label: '🌲 마법 숲과 잃어버린 보석', value: '신비한 마법의 숲에서 악당에게 빼앗긴 전설의 마법 보석을 되찾기 위해 모험을 시작함' },
+                    { label: '🛸 우주 정거장 외계인 침공', value: '은하계 우주 정거장에 갑자기 몰려온 장난꾸러기 외계인 군단을 막기 위해 긴급 출동함' },
+                    { label: '🍭 과자 나라 대모험', value: '초콜릿 강과 사탕 나무가 있는 달콤한 과자 나라에서 최고의 황금 디저트를 모으러 떠남' },
+                    { label: '🐳 깊은 바닷속 보물찾기', value: '신비로운 심해 바닷속 용궁에서 위험에 빠진 바다 친구들을 구하고 전설의 진주를 찾음' },
+                    { label: '🏫 학교 교실 비밀 작전', value: '선생님과 친구들이 몰래 준비한 학교 교실 속 두근두근 비밀 미션 작전을 수행함' },
+                    { label: '🦖 공룡 시대 시간여행', value: '타임머신을 타고 백악기 공룡 시대로 날아가 에너지를 모아 무사히 집으로 돌아와야 함' }
+                ]
+            },
+            {
+                id: 'character',
+                num: 3,
+                icon: '🦸',
+                title: '주인공과 조작법은 어떤가요?',
+                subtitle: '주인공 캐릭터의 모습과 움직이는 방법',
+                theme: {
+                    bg: 'bg-amber-50',
+                    border: 'border-amber-200',
+                    title: 'text-amber-800',
+                    btnActiveBg: 'bg-amber-500',
+                    btnActiveText: 'text-white',
+                    btnActiveBorder: 'border-amber-700',
+                    inputBorder: 'border-amber-400'
+                },
+                placeholder: '예: 방향키로 움직이는 날쌘 고양이, 스페이스바를 누르면 높이 점프해요!',
+                options: [
+                    { label: '🐱 방향키로 움직이는 고양이', value: '주인공은 귀여운 고양이이며 키보드 방향키(←→↑↓)와 화면 터치 버튼으로 재빠르게 이동함' },
+                    { label: '🟢 스페이스바로 2단 점프하는 슬라임', value: '주인공은 말랑말랑한 슬라임이며 스페이스바(또는 점프 버튼)를 눌러 통통 2단 점프를 함' },
+                    { label: '🪄 마우스를 따라다니는 마법봉', value: '주인공은 반짝이는 마법봉(요정)이며 마우스 커서나 손가락 터치 위치를 부드럽게 따라다님' },
+                    { label: '🤖 클릭하면 레이저 쏘는 로봇', value: '주인공은 정의의 꼬마 로봇이며 마우스를 클릭한 방향으로 멋진 에너지 레이저를 발사함' },
+                    { label: '🐶 마우스로 드래그하는 강아지', value: '주인공은 용감한 강아지이며 마우스나 손가락으로 끌어서(드래그) 원하는 위치로 이동시킴' },
+                    { label: '🧙 방향키로 이동 + Z키로 마법 공격!', value: '주인공은 꼬마 마법사이며 방향키로 이동하고 스페이스바/공격 버튼으로 마법 탄환을 발사함' }
+                ]
+            },
+            {
+                id: 'mission',
+                num: 4,
+                icon: '🔥',
+                title: '방해물과 특별 아이템은 무엇인가요?',
+                subtitle: '게임을 더 스릴 넘치고 재미있게 만드는 요소',
+                theme: {
+                    bg: 'bg-rose-50',
+                    border: 'border-rose-200',
+                    title: 'text-rose-800',
+                    btnActiveBg: 'bg-rose-500',
+                    btnActiveText: 'text-white',
+                    btnActiveBorder: 'border-rose-700',
+                    inputBorder: 'border-rose-400'
+                },
+                placeholder: '예: 닿으면 하트가 깎이는 폭탄과, 먹으면 5초 동안 무적이 되는 무지개 별이 나와요!',
+                options: [
+                    { label: '💣 닿으면 하트 깎이는 폭탄', value: '피해야 하는 검은 폭탄이나 가시 함정이 나타나며 부딪히면 생명(하트)이 1개씩 깎임' },
+                    { label: '👾 시간이 갈수록 빨라지는 괴물', value: '시간이 지나거나 레벨이 오를수록 방해물과 괴물들의 이동 속도가 점점 빨라져 긴장감을 줌' },
+                    { label: '🌟 먹으면 무적이 되는 무지개 별', value: '가끔 등장하는 반짝이는 무지개 별을 먹으면 잠시 동안 무적 상태가 되어 방해물을 튕겨냄' },
+                    { label: '🍄 크기가 커지는 슈퍼 버섯 & 자석', value: '먹으면 캐릭터가 거대해지거나 주변 점수 아이템을 싹 끌어당기는 신기한 마법 아이템이 등장함' },
+                    { label: '❄️ 괴물을 얼리는 얼음 마법 아이템', value: '획득하면 화면의 방해물들이 잠시 느려지거나 꽁꽁 얼어붙는 얼음 아이템이 등장함' },
+                    { label: '🎁 점수가 2배로 터지는 황금 보물상자', value: '먹으면 보너스 점수가 팡팡 터지고 잃어버린 하트를 회복시켜 주는 황금 아이템이 등장함' }
+                ]
+            },
+            {
+                id: 'ending',
+                num: 5,
+                icon: '🏆',
+                title: '승리 조건과 게임오버 규칙은?',
+                subtitle: '어떻게 하면 이기고, 언제 게임이 끝나는지 정해요',
+                theme: {
+                    bg: 'bg-purple-50',
+                    border: 'border-purple-200',
+                    title: 'text-purple-800',
+                    btnActiveBg: 'bg-purple-600',
+                    btnActiveText: 'text-white',
+                    btnActiveBorder: 'border-purple-800',
+                    inputBorder: 'border-purple-400'
+                },
+                placeholder: '예: 100점을 모으면 해피엔딩으로 클리어하고, 하트 3개를 모두 잃으면 게임오버!',
+                options: [
+                    { label: '🎉 100점 모으면 해피엔딩!', value: '목표 점수인 100점을 달성하면 화려한 축하 폭죽과 함께 해피엔딩 스토리 화면이 나오며 승리함' },
+                    { label: '⏳ 60초 동안 살아남기', value: '상단 타이머의 60초 제한 시간 동안 끝까지 살아남으면 승리하고 최종 기록을 보여줌' },
+                    { label: '💔 하트 3개 모두 잃으면 게임오버', value: '생명(하트) 3개로 시작하며, 장애물에 부딪혀 하트를 모두 잃으면 게임오버 화면과 재도전 버튼이 나옴' },
+                    { label: '🐉 마지막 보스 몬스터 물리치기!', value: '점수를 모아 마지막에 등장하는 거대 보스 몬스터의 체력을 0으로 만들면 완벽한 승리를 거둠' },
+                    { label: '💎 전설의 보물 5개 모두 수집하기', value: '스테이지에 나타나는 특별 목표 아이템(보석 5개)을 모두 모으면 미션 클리어 화면으로 넘어감' },
+                    { label: '👑 최고 기록(하이스코어) 무한 랭킹전', value: '클리어 후에도 내 최고 점수(Best Score)를 계속 경신할 수 있는 무한 모드와 등급 칭호를 제공함' }
+                ]
+            },
+            {
+                id: 'vibe',
+                num: 6,
+                icon: '🎨',
+                title: '그래픽 연출과 사운드 효과는?',
+                subtitle: '눈과 귀가 즐거워지는 이펙트와 분위기',
+                theme: {
+                    bg: 'bg-pink-50',
+                    border: 'border-pink-200',
+                    title: 'text-pink-800',
+                    btnActiveBg: 'bg-pink-500',
+                    btnActiveText: 'text-white',
+                    btnActiveBorder: 'border-pink-700',
+                    inputBorder: 'border-pink-400'
+                },
+                placeholder: '예: 화려한 무지개 배경에 점수를 얻을 때마다 파티클이 터지고 신나는 8비트 효과음이 나요!',
+                options: [
+                    { label: '✨ 부드러운 애니메이션과 파티클 효과', value: '아이템을 먹거나 움직일 때 반짝이는 별가루 파티클과 "+10점!" 플로팅 글씨가 부드럽게 퍼짐' },
+                    { label: '🔊 신나는 8비트 레트로 효과음', value: 'Web Audio API를 사용해 점프, 아이템 획득, 충돌, 클리어 시 경쾌한 8비트 오락실 효과음이 재생됨' },
+                    { label: '💥 화면 흔들림(카메라 쉐이크) 타격감', value: '폭탄에 부딪히거나 공격할 때 화면이 역동적으로 흔들리고 번쩍이는 짜릿한 타격감 연출을 넣음' },
+                    { label: '🌈 화려한 무지개/파스텔 배경 변화', value: '화사한 파스텔 및 무지개색 그라데이션 배경이 레벨에 따라 아름답게 변하며 구름/별이 흘러감' },
+                    { label: '💬 상황에 따라 외치는 귀여운 말풍선', value: '캐릭터 머리 위나 화면에 "신난다!", "앗 조심해!" 같은 실시간 말풍선 대사가 나타나 생동감을 줌' },
+                    { label: '🕹️ 번쩍이는 사이버 네온 아케이드 풍', value: '어두운 밤하늘/우주 배경 위에 형광 네온 컬러로 빛나는 멋진 아케이드 게임 그래픽을 연출함' }
+                ]
+            }
+        ];
+
+        // 상태 관리 객체
+        const state = {};
+        CATEGORIES.forEach(cat => {
+            state[cat.id] = {
+                selectedValues: [],
+                customActive: false,
+                customText: ''
+            };
+        });
+
+        // 🎨 내 손그림 스튜디오 상태 관리
+        const artState = {
+            enabled: true,
+            mode: 'draw', // 'draw' | 'upload'
+            hasCanvasDrawing: false,
+            uploadedDataUrl: null,
+            penColor: '#1e293b',
+            brushSize: 8,
+            isEraser: false,
+            isDrawing: false
+        };
+
+        let canvas, ctx;
+
+        // 초기 렌더링 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            renderStep1();
+            renderStep2();
+            initDrawingCanvas();
+            updateNavHighlight('intro');
+        });
+
+        // 미니 그림판 캔버스 초기화 및 이벤트 바인딩
+        function initDrawingCanvas() {
+            canvas = document.getElementById('drawing-canvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                if (e.touches && e.touches.length > 0) {
+                    return {
+                        x: (e.touches[0].clientX - rect.left) * scaleX,
+                        y: (e.touches[0].clientY - rect.top) * scaleY
+                    };
+                }
+                return {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY
+                };
+            };
+
+            const startDraw = (e) => {
+                e.preventDefault();
+                artState.isDrawing = true;
+                artState.hasCanvasDrawing = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                drawMove(e);
+            };
+
+            const drawMove = (e) => {
+                if (!artState.isDrawing) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                ctx.lineWidth = artState.brushSize;
+                if (artState.isEraser) {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.strokeStyle = 'rgba(0,0,0,1)';
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = artState.penColor;
+                }
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            };
+
+            const endDraw = () => {
+                if (!artState.isDrawing) return;
+                artState.isDrawing = false;
+                ctx.closePath();
+            };
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', drawMove);
+            window.addEventListener('mouseup', endDraw);
+
+            canvas.addEventListener('touchstart', startDraw, { passive: false });
+            canvas.addEventListener('touchmove', drawMove, { passive: false });
+            window.addEventListener('touchend', endDraw);
+        }
+
+        // 그림 스튜디오 켜기/끄기 토글
+        function toggleDrawingStudio(enabled) {
+            artState.enabled = enabled;
+            const bodyEl = document.getElementById('drawing-studio-body');
+            if (enabled) {
+                bodyEl.classList.remove('hidden');
+            } else {
+                bodyEl.classList.add('hidden');
+            }
+        }
+
+        // 그림 모드 전환: (A) 직접 그리기 vs (B) 사진 업로드
+        function switchArtMode(mode) {
+            artState.mode = mode;
+            const drawBtn = document.getElementById('tab-draw-btn');
+            const uploadBtn = document.getElementById('tab-upload-btn');
+            const drawPanel = document.getElementById('art-mode-draw');
+            const uploadPanel = document.getElementById('art-mode-upload');
+
+            if (mode === 'draw') {
+                drawPanel.classList.remove('hidden');
+                uploadPanel.classList.add('hidden');
+                drawBtn.className = 'flex-1 py-3.5 px-5 rounded-2xl text-lg md:text-xl border-2 border-amber-500 bg-amber-500 text-white shadow-md transition flex items-center justify-center gap-2';
+                uploadBtn.className = 'flex-1 py-3.5 px-5 rounded-2xl text-lg md:text-xl border-2 border-amber-300 bg-white text-amber-800 hover:bg-amber-100 transition flex items-center justify-center gap-2';
+            } else {
+                drawPanel.classList.add('hidden');
+                uploadPanel.classList.remove('hidden');
+                uploadBtn.className = 'flex-1 py-3.5 px-5 rounded-2xl text-lg md:text-xl border-2 border-amber-500 bg-amber-500 text-white shadow-md transition flex items-center justify-center gap-2';
+                drawBtn.className = 'flex-1 py-3.5 px-5 rounded-2xl text-lg md:text-xl border-2 border-amber-300 bg-white text-amber-800 hover:bg-amber-100 transition flex items-center justify-center gap-2';
+            }
+        }
+
+        // 펜 색상 선택
+        function selectPenColor(color, btnEl) {
+            artState.penColor = color;
+            artState.isEraser = false;
+            document.querySelectorAll('#color-palette .color-swatch').forEach(el => el.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+
+            const eraserBtn = document.getElementById('eraser-btn');
+            eraserBtn.classList.remove('bg-purple-600', 'text-white', 'border-purple-700');
+            eraserBtn.classList.add('bg-gray-50', 'text-gray-700', 'border-gray-300');
+            document.getElementById('current-tool-badge').textContent = '현재: 컬러 펜';
+        }
+
+        // 지우개 활성화
+        function enableEraser() {
+            artState.isEraser = true;
+            document.querySelectorAll('#color-palette .color-swatch').forEach(el => el.classList.remove('active'));
+            const eraserBtn = document.getElementById('eraser-btn');
+            eraserBtn.classList.remove('bg-gray-50', 'text-gray-700', 'border-gray-300');
+            eraserBtn.classList.add('bg-purple-600', 'text-white', 'border-purple-700');
+            document.getElementById('current-tool-badge').textContent = '현재: 지우개 모드';
+        }
+
+        // 브러시 굵기 변경
+        function updateBrushSize(val) {
+            artState.brushSize = Number(val);
+            let desc = '보통';
+            if (val <= 5) desc = '가는 펜';
+            else if (val >= 16) desc = '굵은 펜';
+            document.getElementById('brush-size-label').textContent = `${val}px (${desc})`;
+        }
+
+        // 캔버스 전체 지우기
+        function clearCanvas() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            artState.hasCanvasDrawing = false;
+            showToast('🧹 그림판을 깨끗하게 지웠어요!');
+        }
+
+        // 사진 업로드 처리
+        function handleArtUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                artState.uploadedDataUrl = e.target.result;
+                document.getElementById('uploaded-art-img').src = artState.uploadedDataUrl;
+                document.getElementById('upload-preview-empty').classList.add('hidden');
+                const box = document.getElementById('upload-preview-box');
+                box.classList.remove('hidden');
+                box.classList.add('flex');
+                showToast('📸 내 그림 사진이 멋지게 올라갔어요!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 업로드한 사진 지우기
+        function clearUploadedArt() {
+            artState.uploadedDataUrl = null;
+            document.getElementById('upload-art-input').value = '';
+            document.getElementById('upload-preview-empty').classList.remove('hidden');
+            const box = document.getElementById('upload-preview-box');
+            box.classList.add('hidden');
+            box.classList.remove('flex');
+        }
+
+        // 현재 활성화된 그림의 DataURL 가져오기 (흰 배경 합성 또는 투명 PNG)
+        function getActiveArtDataUrl() {
+            if (!artState.enabled) return null;
+            if (artState.mode === 'upload' && artState.uploadedDataUrl) {
+                return artState.uploadedDataUrl;
+            }
+            if (artState.mode === 'draw' && artState.hasCanvasDrawing && canvas) {
+                return canvas.toDataURL('image/png');
+            }
+            // 다른 탭에 그림이 있는 경우 폴백
+            if (artState.uploadedDataUrl) return artState.uploadedDataUrl;
+            if (artState.hasCanvasDrawing && canvas) return canvas.toDataURL('image/png');
+            return null;
+        }
+
+        // 내 그림 PNG 파일로 다운로드
+        function downloadArtImage() {
+            const dataUrl = getActiveArtDataUrl();
+            if (!dataUrl) {
+                showToast('🎨 먼저 그림판에 그림을 그려주세요!');
+                return;
+            }
+            const link = document.createElement('a');
+            link.download = 'my_game_character.png';
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('💾 내 그림이 PNG 이미지 파일로 저장되었어요!');
+        }
+
+        // Step 1 화면 동적 생성
+        function renderStep1() {
+            const container = document.getElementById('step1-categories-container');
+            container.innerHTML = CATEGORIES.map(cat => `
+                <div class="${cat.theme.bg} p-5 md:p-6 rounded-3xl border-2 ${cat.theme.border} shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-1">
+                        <h3 class="text-2xl md:text-3xl ${cat.theme.title}">
+                            ${cat.icon} ${cat.num}. ${cat.title}
+                        </h3>
+                        <span class="text-xs md:text-sm bg-white/80 px-3 py-1 rounded-full text-gray-600 font-sans-kr self-start sm:self-auto border ${cat.theme.border}">
+                            ✨ ${cat.subtitle}
+                        </span>
+                    </div>
+                    
+                    <!-- 옵션 버튼 그리드 (6개 옵션 + 1개 직접 입력) -->
+                    <div class="option-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3" id="group-${cat.id}">
+                        ${cat.options.map((opt, idx) => `
+                            <button type="button" 
+                                onclick="toggleOption('${cat.id}', ${idx}, this)" 
+                                data-idx="${idx}"
+                                class="opt-btn bg-white hover:bg-white/90 p-3.5 rounded-2xl border-2 border-white shadow-sm text-left text-base md:text-lg flex items-start justify-between gap-3 text-gray-700 min-w-0">
+                                <span class="option-label">${opt.label}</span>
+                                <span class="check-icon shrink-0 whitespace-nowrap text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400">선택</span>
+                            </button>
+                        `).join('')}
+                        
+                        <!-- 7번째: 직접 쓸래요 버튼 -->
+                        <button type="button" 
+                            onclick="toggleCustomOption('${cat.id}', this)" 
+                            id="custom-btn-${cat.id}"
+                            class="opt-btn custom-option-btn bg-white/90 hover:bg-white p-3.5 rounded-2xl border-2 border-dashed ${cat.theme.inputBorder} text-left text-base md:text-lg flex items-start justify-between gap-3 ${cat.theme.title} sm:col-span-2 xl:col-span-3 min-w-0">
+                            <span class="option-label">✏️ 내 생각 직접 쓸래요! (여기에 없는 새로운 아이디어 추가하기)</span>
+                            <span class="check-icon shrink-0 whitespace-nowrap text-xs px-2.5 py-1 rounded-full bg-white border">직접 입력</span>
+                        </button>
+                    </div>
+
+                    <!-- 직접 입력 텍스트창 -->
+                    <div id="custom-input-wrap-${cat.id}" class="mt-3 hidden fade-in">
+                        <input type="text" 
+                            id="custom-input-${cat.id}"
+                            oninput="handleCustomInput('${cat.id}', this.value)" 
+                            placeholder="💡 ${cat.placeholder}" 
+                            class="w-full bg-white border-2 ${cat.theme.inputBorder} rounded-2xl p-4 text-base md:text-lg font-sans-kr focus:outline-none shadow-inner text-gray-800">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Step 2 화면 동적 생성
+        function renderStep2() {
+            const container = document.getElementById('step2-textareas-container');
+            container.innerHTML = CATEGORIES.map(cat => `
+                <div class="${cat.theme.bg} p-5 rounded-3xl border-2 ${cat.theme.border} flex flex-col justify-between shadow-sm">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="text-${cat.id}" class="text-xl md:text-2xl ${cat.theme.title}">
+                                ${cat.icon} ${cat.num}. ${cat.title}
+                            </label>
+                        </div>
+                        <p class="text-xs md:text-sm text-gray-500 font-sans-kr mb-3">${cat.subtitle}</p>
+                    </div>
+                    <textarea 
+                        id="text-${cat.id}" 
+                        rows="3" 
+                        placeholder="예시: ${cat.placeholder}" 
+                        class="w-full bg-white border-2 ${cat.theme.border} rounded-2xl p-3.5 text-base font-sans-kr focus:outline-none focus:${cat.theme.inputBorder} resize-y text-gray-800 leading-relaxed"></textarea>
+                </div>
+            `).join('');
+        }
+
+        // Step 1 옵션 다중 선택 토글 로직
+        function toggleOption(catId, optionIndex, btnEl) {
+            const cat = CATEGORIES.find(c => c.id === catId);
+            const optValue = cat.options[optionIndex].value;
+            const selectedArr = state[catId].selectedValues;
+            const existingIdx = selectedArr.indexOf(optValue);
+
+            const checkBadge = btnEl.querySelector('.check-icon');
+
+            if (existingIdx > -1) {
+                // 선택 해제
+                selectedArr.splice(existingIdx, 1);
+                btnEl.classList.remove('selected', cat.theme.btnActiveBg, cat.theme.btnActiveText, cat.theme.btnActiveBorder);
+                btnEl.classList.add('bg-white', 'text-gray-700', 'border-white');
+                checkBadge.textContent = '선택';
+                checkBadge.className = 'check-icon text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400';
+            } else {
+                // 선택 추가
+                selectedArr.push(optValue);
+                btnEl.classList.remove('bg-white', 'text-gray-700', 'border-white');
+                btnEl.classList.add('selected', cat.theme.btnActiveBg, cat.theme.btnActiveText, cat.theme.btnActiveBorder);
+                checkBadge.textContent = '✔ 선택됨';
+                checkBadge.className = 'check-icon text-xs px-2 py-0.5 rounded-full bg-black/20 text-white';
+            }
+
+            syncCategoryToStep2(catId);
+        }
+
+        // Step 1 '직접 쓸래요' 버튼 토글 로직
+        function toggleCustomOption(catId, btnEl) {
+            const cat = CATEGORIES.find(c => c.id === catId);
+            const wrapEl = document.getElementById(`custom-input-wrap-${catId}`);
+            const inputEl = document.getElementById(`custom-input-${catId}`);
+            const checkBadge = btnEl.querySelector('.check-icon');
+
+            state[catId].customActive = !state[catId].customActive;
+
+            if (state[catId].customActive) {
+                wrapEl.classList.remove('hidden');
+                btnEl.classList.add('selected', cat.theme.btnActiveBg, cat.theme.btnActiveText);
+                btnEl.classList.remove('bg-white/90', cat.theme.title);
+                checkBadge.textContent = '✔ 입력 중';
+                checkBadge.className = 'check-icon text-xs px-2.5 py-0.5 rounded-full bg-black/20 text-white';
+                inputEl.focus();
+            } else {
+                wrapEl.classList.add('hidden');
+                btnEl.classList.remove('selected', cat.theme.btnActiveBg, cat.theme.btnActiveText);
+                btnEl.classList.add('bg-white/90', cat.theme.title);
+                checkBadge.textContent = '직접 입력';
+                checkBadge.className = 'check-icon text-xs px-2.5 py-0.5 rounded-full bg-white border text-gray-600';
+            }
+
+            syncCategoryToStep2(catId);
+        }
+
+        // 직접 입력창 타이핑 시 연동
+        function handleCustomInput(catId, val) {
+            state[catId].customText = val;
+            syncCategoryToStep2(catId);
+        }
+
+        // Step 1의 선택값 + 직접 입력값을 결합하여 Step 2의 Textarea에 실시간 동기화
+        function syncCategoryToStep2(catId) {
+            const parts = [...state[catId].selectedValues];
+            if (state[catId].customActive && state[catId].customText.trim() !== '') {
+                parts.push(state[catId].customText.trim());
+            }
+            const textarea = document.getElementById(`text-${catId}`);
+            textarea.value = parts.join(' + ');
+        }
+
+        // 상단 네비게이션 활성화 표시
+        function updateNavHighlight(screenId) {
+            const navIds = ['step1', 'step2', 'result'];
+            navIds.forEach(id => {
+                const btn = document.getElementById(`nav-${id}`);
+                if (!btn) return;
+                if (id === screenId) {
+                    btn.className = 'px-3.5 py-1.5 rounded-xl bg-purple-600 text-white shadow-sm transition flex items-center gap-1 scale-105';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-purple-100 text-gray-600 transition flex items-center gap-1';
+                }
+            });
+        }
+
+        // 화면 전환 함수
+        function goTo(screenId) {
+            ['intro', 'step1', 'step2', 'result'].forEach(id => {
+                document.getElementById(id + '-screen').classList.add('hidden');
+            });
+
+            if (screenId === 'result') {
+                generateHighQualityGamePrompt();
+            }
+
+            document.getElementById(screenId + '-screen').classList.remove('hidden');
+            updateNavHighlight(screenId);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ★ 핵심: 실제 게임처럼 작동하도록 강제하는 프로 게임 개발 프롬프트 생성기
+        function generateHighQualityGamePrompt() {
+            const gameTitleInput = document.getElementById('game-title').value.trim();
+            const titleStr = gameTitleInput ? `"${gameTitleInput}"` : "아이의 기획 내용에 어울리는 신나고 멋진 게임 제목(직접 창작해줘)";
+
+            const values = {};
+            const summaryHtmlParts = [];
+
+            CATEGORIES.forEach(cat => {
+                const rawVal = document.getElementById(`text-${cat.id}`).value.trim();
+                values[cat.id] = rawVal || "(아이가 비워두었으니 다른 항목들과 가장 잘 어울리는 재미있는 내용으로 네가 직접 창작해서 채워줘!)";
+                
+                const shortPreview = rawVal ? (rawVal.length > 42 ? rawVal.substring(0, 42) + '...' : rawVal) : 'AI 자동 창작 ✨';
+                summaryHtmlParts.push(`
+                    <div class="bg-white p-2.5 rounded-xl border border-purple-100 shadow-sm">
+                        <div class="font-bold text-purple-700 text-xs mb-0.5">${cat.icon} ${cat.num}. ${cat.title.split('?')[0]}</div>
+                        <div class="text-gray-700 text-xs">${shortPreview}</div>
+                    </div>
+                `);
+            });
+
+            document.getElementById('summary-badges').innerHTML = summaryHtmlParts.join('');
+
+            // 🎨 그림 미리보기 배너 및 그림 반영 프롬프트 지침 생성
+            const activeArtUrl = getActiveArtDataUrl();
+            const artBanner = document.getElementById('result-art-banner');
+            const artPreviewImg = document.getElementById('result-art-preview-img');
+            const optAiSvg = document.getElementById('opt-ai-svg').checked;
+            const optIngameUpload = document.getElementById('opt-ingame-upload').checked;
+            const artDescVal = document.getElementById('art-desc').value.trim();
+
+            if (activeArtUrl) {
+                artPreviewImg.src = activeArtUrl;
+                artBanner.classList.remove('hidden');
+            } else {
+                artBanner.classList.add('hidden');
+            }
+
+            let artPromptSection = '';
+            if (artState.enabled && (optAiSvg || optIngameUpload || activeArtUrl || artDescVal)) {
+                const artRules = [];
+                if (artDescVal) {
+                    artRules.push(`- 아이의 손그림 캐릭터/요소 설명: "${artDescVal}"`);
+                }
+                if (optAiSvg) {
+                    artRules.push(`- [👀 AI 시각 분석 & 코드 그래픽 구현]: 내가 채팅창에 내 손그림 이미지를 함께 첨부할 거야(만약 첨부하지 않았다면 위 설명을 바탕으로 상상해 줘). 그림 속 캐릭터의 모양, 색깔, 표정, 특징을 자세히 분석해서 똑같이 닮은 귀여운 커스텀 SVG 또는 정교한 Canvas 드로잉 코드로 기본 주인공/몬스터 그래픽을 구현해 줘!`);
+                }
+                if (optIngameUpload) {
+                    artRules.push(`- [📂 게임 내 '내 그림 파일 직접 불러오기' 기능 필수 탑재]: 만들어진 게임의 [1. 타이틀/스토리 시작 화면]에 눈에 잘 띄는 **[🎨 내 손그림 캐릭터 올리기 (파일 선택)]** 버튼(\`<input type="file" accept="image/*">\`)을 반드시 만들어 줘! 플레이어가 컴퓨터나 태블릿에서 자기가 그린 그림 파일을 선택하면, \`FileReader\`로 이미지를 읽어와서 배경(흰색 계열 픽셀)을 자동으로 투명하게 처리하거나 동그랗고 예쁜 프레임으로 다듬은 뒤, 실제 게임 속 주인공(또는 몬스터) 스프라이트 이미지로 즉시 교체되어 화면에서 살아 움직이도록 코딩해 줘!`);
+                }
+
+                artPromptSection = `
+=========================================
+🎨 [특별 요청: 내가 그린 손그림 반영 지침 - 매우 중요!]
+=========================================
+${artRules.join('\n')}
+`;
+            }
+
+            const promptText = 
+`너는 아이들을 위해 최고로 재미있고 완성도 높은 HTML5 웹 게임을 만드는 '수석 게임 개발자'이자 '스토리텔러'야.
+아이가 직접 기획한 아래 아이디어를 바탕으로, 껍데기만 있는 화면이 아니라 **실제로 캐릭터가 움직이고, 스토리가 진행되며, 점수와 승패가 완벽하게 작동하는 고퀄리티 웹 게임**을 [단 하나의 HTML 파일]로 만들어 줘!
+
+=========================================
+🎮 [아이의 게임 기획서]
+=========================================
+🏷️ 게임 제목: ${titleStr}
+
+1️⃣ 게임 장르와 핵심 방식:
+${values.genre}
+
+2️⃣ 배경 세계관과 시작 스토리:
+${values.world}
+
+3️⃣ 주인공 캐릭터와 조작 방법:
+${values.character}
+
+4️⃣ 미션, 아이템, 그리고 방해물(긴장감 요소):
+${values.mission}
+
+5️⃣ 승리(클리어) 조건과 게임 오버 규칙:
+${values.ending}
+
+6️⃣ 화면 분위기, 그래픽 연출 및 효과음:
+${values.vibe}
+${artPromptSection}
+=========================================
+🚨 [프로 게임 아키텍처 및 필수 개발 규칙 - 100% 구현 필수!]
+=========================================
+결과물이 어설픈 예시가 되지 않도록 반드시 아래 3단 화면 상태 관리(State Management)와 게임 엔진 로직을 빠짐없이 구현해 줘.
+
+1. 완벽한 3단 화면(State) 전환 시스템 구현:
+   - [① 타이틀 / 스토리 인트로 화면]: 
+     * 멋진 게임 타이틀과 함께, '왜 이 모험을 시작하게 되었는지' 아이의 기획(2번 항목)을 살린 흥미진진한 도입부 스토리 박스를 보여줘.
+     * 누구나 보고 바로 이해할 수 있는 친절한 [조작 방법 및 게임 규칙 안내] 박스를 넣어줘.
+     * **[🎨 내 그림 캐릭터/배경 이미지 직접 업로드]** 파일 선택 버튼(미리보기 포함)을 제공해서, 아이가 자기 그림 파일을 올리면 그 그림이 게임 주인공으로 즉시 적용되게 해 줘(파일을 안 올렸을 때는 네가 정성껏 그린 귀여운 SVG/Canvas 기본 캐릭터로 플레이!).
+     * 큼직하고 누르고 싶은 [🚀 게임 시작하기!] 버튼을 만들어줘.
+   - [② 메인 게임 플레이 화면]:
+     * 상단 HUD(정보 표시줄): 실시간 점수(목표 점수 포함), 남은 생명(하트 아이콘 체력바) 또는 제한 시간 타이머, 현재 레벨(Stage)을 한눈에 보이게 표시해 줘.
+     * 게임 월드 영역: 부드러운 \`requestAnimationFrame\` 게임 루프를 사용하여 캐릭터 이동, 오브젝트 스폰, 정확한 충돌 판정(Collision Detection)이 작동하는 메인 게임을 구현해 줘. (키보드 조작뿐만 아니라 모바일/태블릿용 화면 터치/마우스 조작도 함께 지원!)
+     * 실시간 대사/말풍선: 게임 도중 상황에 따라 재미있는 한 줄 대사나 이펙트가 나오게 해 줘.
+   - [③ 클리어 해피엔딩 / 게임오버 결과 화면]:
+     * 승리 조건 달성 시: 화려한 축하 폭죽 연출과 함께 스토리가 마무리되는 해피엔딩 메시지, 최종 점수, 그리고 [다시 하기] 버튼을 보여줘.
+     * 게임 오버 시: 격려 메시지와 기록한 점수, 그리고 즉시 재도전할 수 있는 [다시 도전하기!] 버튼을 구현해 줘.
+
+2. 시청각 타격감 및 사운드 합성 보장:
+   - 깨지는 외부 이미지 URL(\`img src="http..."\`)은 절대 쓰지 말고, 커스텀 SVG/Canvas 그래픽, 이모지, 그리고 플레이어가 업로드한 이미지 객체를 사용해 화려하게 그려줘.
+   - 점수를 얻거나 방해물에 부딪힐 때 파티클 폭죽 효과, "+10점!" 플로팅 텍스트, 화면 흔들림(Screen Shake) 타격감을 넣어줘.
+   - Web Audio API(신디사이저)를 활용해 외부 오디오 파일 없이도 점프, 아이템 획득, 충돌, 승리/게임오버 시 경쾌한 8비트 레트로 효과음이 나도록 구현해 줘 (상단에 음소거 버튼 포함).
+
+3. 코드 출력 형식:
+   - HTML, Tailwind CSS(CDN), JavaScript가 모두 합쳐진 **완전한 단일 HTML 파일 코드**로 작성해 줘.
+   - 코드가 중간에 생략되거나(\`// ... 생략 ...\`) 잘리지 않고, 복사해서 바로 실행했을 때 처음부터 끝까지 완벽하게 플레이할 수 있도록 전체 코드를 출력해 줘!`;
+
+            document.getElementById('finalPrompt').value = promptText;
+        }
+
+        // 전체 초기화
+        function resetApp() {
+            document.getElementById('game-title').value = '';
+            document.getElementById('art-desc').value = '';
+            CATEGORIES.forEach(cat => {
+                state[cat.id].selectedValues = [];
+                state[cat.id].customActive = false;
+                state[cat.id].customText = '';
+            });
+            clearCanvas();
+            clearUploadedArt();
+            renderStep1();
+            renderStep2();
+            goTo('intro');
+        }
+
+        // 클립보드 복사 함수
+        function copyPrompt() {
+            const textarea = document.getElementById('finalPrompt');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+
+            try {
+                document.execCommand('copy');
+                showToast('🎉 고퀄리티 게임 주문서 복사 완료! AI에 붙여넣어 보세요!');
+            } catch (err) {
+                showToast('❗ 복사에 실패했어요. 글씨를 직접 선택해서 복사해 주세요!');
+            }
+        }
+
+        // 토스트 메시지 표시
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = message;
+            toast.classList.remove('-translate-y-[200%]');
+            toast.classList.add('translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0');
+                toast.classList.add('-translate-y-[200%]');
+            }, 3000);
+        }
+    </script>
+    </div>\n
+    <!-- 버튼 효과음 설정 -->
+    <button id="sound-toggle" type="button" aria-pressed="true"
+      title="버튼 효과음 켜기/끄기"
+      style="position:fixed;right:16px;bottom:16px;z-index:9999;border:2px solid #c4b5fd;border-radius:999px;background:#fff;color:#5b21b6;padding:10px 14px;font-family:inherit;font-weight:700;box-shadow:0 4px 14px #4c1d9530;cursor:pointer">
+      🔊 효과음 켜짐
+    </button>
+    <script>
+    (() => {
+      let soundEnabled = true;
+      let audioContext = null;
+      const toggle = document.getElementById('sound-toggle');
+
+      function playButtonSound() {
+        if (!soundEnabled) return;
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          if (!audioContext) audioContext = new AudioCtx();
+          if (audioContext.state === 'suspended') audioContext.resume();
+
+          const now = audioContext.currentTime;
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(660, now);
+          oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.045);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(0.075, now + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.085);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + 0.09);
+        } catch (e) {
+          // 브라우저의 오디오 정책이나 미지원 환경에서는 소리 없이 동작합니다.
+        }
+      }
+
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('button, [role="button"]');
+        if (!button || button.id === 'sound-toggle' || button.disabled) return;
+        playButtonSound();
+      }, true);
+
+      toggle.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        toggle.textContent = soundEnabled ? '🔊 효과음 켜짐' : '🔇 효과음 꺼짐';
+        toggle.setAttribute('aria-pressed', String(soundEnabled));
+        toggle.title = soundEnabled ? '버튼 효과음 끄기' : '버튼 효과음 켜기';
+      });
+    })();
+    </script>
+
+</body>
+</html>
