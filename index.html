@@ -1305,6 +1305,11 @@ ${titleUploadLine}
       style="position:fixed;right:16px;bottom:16px;z-index:9999;border:2px solid #c4b5fd;border-radius:999px;background:#fff;color:#5b21b6;padding:10px 14px;font-family:inherit;font-weight:700;box-shadow:0 4px 14px #4c1d9530;cursor:pointer">
       🔊 효과음 켜짐
     </button>
+    <!-- 🔔 알림 메시지(토스트) -->
+    <div id="toast" role="status" aria-live="polite" class="fixed top-4 left-1/2 -translate-x-1/2 -translate-y-[200%] z-[10000] transition-transform duration-300 pointer-events-none">
+        <div id="toast-msg" class="bg-purple-700 text-white text-base md:text-lg px-6 py-3 rounded-2xl shadow-xl border-2 border-white font-sans-kr"></div>
+    </div>
+
     <script>
     (() => {
       let soundEnabled = true;
